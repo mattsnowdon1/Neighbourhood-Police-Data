@@ -1,7 +1,6 @@
 import requests as reqs
 import pandas as pd
 import numpy as np
-import altair as alt
 
 
 def get_list_of_neighbourhoods() -> list[dict]:
@@ -104,4 +103,6 @@ def get_crime_data() -> tuple[str, pd.DataFrame]:
 
 
 if __name__ == "__main__":
-    print(get_crime_data())
+    neighbourhood, crimes = get_crime_data()
+
+    print(crimes)
