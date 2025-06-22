@@ -1,6 +1,7 @@
 import requests as reqs
 import pandas as pd
 import numpy as np
+import altair as alt
 
 
 def get_list_of_neighbourhoods() -> list[dict]:
@@ -52,7 +53,7 @@ def get_crimes(poly: str) -> pd.DataFrame:
     return pd.DataFrame.from_dict(all_crimes)
 
 
-def extract_location(location: dict):
+def extract_location(location: dict) -> tuple[float, float, int, str]:
     latitude = float(location["latitude"])
     longitude = float(location["longitude"])
     location_id = int(location["street"]["id"])
@@ -61,7 +62,7 @@ def extract_location(location: dict):
     return latitude, longitude, location_id, location_name
 
 
-def extract_outcome(outcome: dict):
+def extract_outcome(outcome: dict) -> tuple[str, str]:
     if outcome is None:
         return np.nan, np.nan
 
@@ -71,7 +72,7 @@ def extract_outcome(outcome: dict):
     return outcome_status, outcome_date
 
 
-def clean_data():
+def clean_data(crimes: pd.DataFrame):
     crimes[["latitude", "longitude", "location_id", "location_name"]] = crimes["location"].apply(
         lambda x: pd.Series(extract_location(x)))
     crimes.drop(columns=["location"], inplace=True)
@@ -84,13 +85,23 @@ def clean_data():
         crimes["outcome_date"], format="%Y-%m")
     crimes["month"] = pd.to_datetime(crimes["month"], format="%Y-%m")
 
-    crimes["context"] = crimes["context"].replace("", np.nan)
+    crimes["context"] = crimes["context"].where(
+        crimes["context"] != "", np.nan)
+
+    if crimes["context"].isna().all():
+        crimes.drop(columns=["context"], inplace=True)
 
 
-if __name__ == "__main__":
+def get_crime_data() -> tuple[str, pd.DataFrame]:
     force, list_of_neighbourhoods = get_list_of_neighbourhoods()
     neighbourhood = get_neighbourhood(list_of_neighbourhoods)
     poly = get_boundary(force, neighbourhood["id"])
     crimes = get_crimes(poly)
 
-    clean_data()
+    clean_data(crimes)
+
+    return neighbourhood["name"], crimes
+
+
+if __name__ == "__main__":
+    print(get_crime_data())
